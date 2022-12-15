@@ -14,6 +14,32 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// API routes without token
+Route::middleware('api')->group(function () {
+
+    // Auth routes
+    Route::prefix('auth')->group(function () {
+
+        Route::post('login', 'AuthController@login');
+        Route::post('register', 'AuthController@register');
+        Route::post('logout', 'AuthController@logout');
+
+    });
+
+});
+
+// API routes with token
+Route::middleware('auth:sanctum')->group(function () {
+
+    // Current user route
+    Route::get('user', 'AuthController@user');
+
+    // Category routes
+    Route::resource('categories', 'CategoriesController')
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // Dish routes
+    Route::resource('dishes', 'DishesController')
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+
 });
