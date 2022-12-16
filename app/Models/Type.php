@@ -2,23 +2,22 @@
 
 namespace App\Models;
 
-use Auth;
-use App\Traits\HasName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasName;
 
-class Category extends Model
+class Type extends Model
 {
     use HasFactory, HasName;
 
     protected $fillable = [
-        'user_id',
-        'name'
+        'name',
+        'type'
     ];
 
-    public function scopeForAuth(Builder $builder)
+    public function scopeByType(Builder $builder, string $type)
     {
-        return $builder->where('user_id', Auth::id());
+        return $builder->where('type', $type);
     }
 }

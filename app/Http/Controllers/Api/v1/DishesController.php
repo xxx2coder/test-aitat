@@ -2,86 +2,120 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Services\DishService;
+use Auth;
+use App\Enums\Paginate;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\v1\DishResource;
 use App\Models\Dish;
-use App\Http\Requests\StoreDishRequest;
-use App\Http\Requests\UpdateDishRequest;
+use App\Http\Requests\Api\v1\Dish\StoreRequest as DishStoreRequest;
+use App\Http\Requests\Api\v1\Dish\UpdateRequest as DishUpdateRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DishesController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        //
+        return response()->json([
+            'dishes' => DishResource::collection(
+                Dish::query()
+                    ->forAuth()
+                    ->orderBy('name', 'ASC')
+                    ->paginate(Paginate::Dish)
+            )
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @param DishStoreRequest $request
+     * @param DishService $dishService
+     * @return JsonResponse
      */
-    public function create()
+    public function store(DishStoreRequest $request, DishService $dishService): JsonResponse
     {
-        //
+        $dish = $dishService->create($request->validated());
+
+        if ($dish) {
+            return response()->json([
+                'message' => 'Вы успешно создали блюдо',
+                'dish' => new DishResource($dish)
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Что-то пошло не так.. Повторите попытку позднее!'
+        ], 400);
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \App\Http\Requests\StoreDishRequest  $request
-     * @return \Illuminate\Http\Response
+     * @param Dish $dish
+     * @return JsonResponse
      */
-    public function store(StoreDishRequest $request)
+    public function show(Dish $dish): JsonResponse
     {
-        //
+        if ($dish->user_id === Auth::id()) {
+            return response()->json([
+                'dish' => new DishResource($dish)
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Недостаточно прав для просмотра'
+        ], 403);
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Dish  $dish
-     * @return \Illuminate\Http\Response
+     * @param DishUpdateRequest $request
+     * @param Dish $dish
+     * @param DishService $dishService
+     * @return JsonResponse
      */
-    public function show(Dish $dish)
+    public function update(DishUpdateRequest $request, Dish $dish, DishService $dishService): JsonResponse
     {
-        //
+        if ($dish->user_id === Auth::id()) {
+            if ($dishService->update($dish, $request->validated())) {
+                return response()->json([
+                    'message' => 'Вы успешно обновили блюдо',
+                    'dish' => new DishResource($dish->refresh())
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Что-то пошло не так.. Повторите попытку позднее!'
+            ], 400);
+        }
+
+        return response()->json([
+            'message' => 'Недостаточно прав для редактирования'
+        ], 403);
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Dish  $dish
-     * @return \Illuminate\Http\Response
+     * @param Dish $dish
+     * @param DishService $dishService
+     * @return JsonResponse
      */
-    public function edit(Dish $dish)
+    public function destroy(Dish $dish, DishService $dishService): JsonResponse
     {
-        //
-    }
+        if ($dish->user_id === Auth::id()) {
+            if ($dishService->delete($dish)) {
+                return response()->json([
+                    'message' => 'Вы успешно удалили блюдо'
+                ]);
+            }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateDishRequest  $request
-     * @param  \App\Models\Dish  $dish
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdateDishRequest $request, Dish $dish)
-    {
-        //
-    }
+            return response()->json([
+                'message' => 'Что-то пошло не так.. Повторите попытку позднее!'
+            ], 400);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Dish  $dish
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Dish $dish)
-    {
-        //
+        return response()->json([
+            'message' => 'Недостаточно прав для удаления'
+        ], 403);
     }
 }

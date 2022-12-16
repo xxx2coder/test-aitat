@@ -14,17 +14,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// API routes without token
-Route::middleware('api')->group(function () {
+// Auth routes
+Route::prefix('auth')->group(function () {
 
-    // Auth routes
-    Route::prefix('auth')->group(function () {
-
-        Route::post('login', 'AuthController@login');
-        Route::post('register', 'AuthController@register');
-        Route::post('logout', 'AuthController@logout');
-
-    });
+    Route::post('login', 'AuthController@login');
+    Route::post('register', 'AuthController@register');
+    Route::post('logout', 'AuthController@logout');
 
 });
 

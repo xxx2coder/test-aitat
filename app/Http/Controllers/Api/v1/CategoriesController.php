@@ -2,86 +2,120 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Services\CategoryService;
+use Auth;
+use App\Enums\Paginate;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\v1\CategoryResource;
 use App\Models\Category;
-use App\Http\Requests\StoreCategoryRequest;
-use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Requests\Api\v1\Category\StoreRequest as CategoryStoreRequest;
+use App\Http\Requests\Api\v1\Category\UpdateRequest as CategoryUpdateRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CategoriesController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        //
+        return response()->json([
+            'categories' => CategoryResource::collection(
+                Category::query()
+                    ->forAuth()
+                    ->orderBy('name', 'ASC')
+                    ->paginate(Paginate::Category)
+            )
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @param CategoryStoreRequest $request
+     * @param CategoryService $categoryService
+     * @return JsonResponse
      */
-    public function create()
+    public function store(CategoryStoreRequest $request, CategoryService $categoryService): JsonResponse
     {
-        //
+        $category = $categoryService->create($request->validated());
+
+        if ($category) {
+            return response()->json([
+                'message' => 'Вы успешно создали категорию',
+                'category' => new CategoryResource($category)
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Что-то пошло не так.. Повторите попытку позднее!'
+        ], 400);
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \App\Http\Requests\StoreCategoryRequest  $request
-     * @return \Illuminate\Http\Response
+     * @param Category $category
+     * @return JsonResponse
      */
-    public function store(StoreCategoryRequest $request)
+    public function show(Category $category): JsonResponse
     {
-        //
+        if ($category->user_id === Auth::id()) {
+            return response()->json([
+                'category' => new CategoryResource($category)
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Недостаточно прав для просмотра'
+        ], 403);
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
+     * @param CategoryUpdateRequest $request
+     * @param Category $category
+     * @param CategoryService $categoryService
+     * @return JsonResponse
      */
-    public function show(Category $category)
+    public function update(CategoryUpdateRequest $request, Category $category, CategoryService $categoryService): JsonResponse
     {
-        //
+        if ($category->user_id === Auth::id()) {
+            if ($categoryService->update($category, $request->validated())) {
+                return response()->json([
+                    'message' => 'Вы успешно обновили категорию',
+                    'category' => new CategoryResource($category->refresh())
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Что-то пошло не так.. Повторите попытку позднее!'
+            ], 400);
+        }
+
+        return response()->json([
+            'message' => 'Недостаточно прав для редактирования'
+        ], 403);
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
+     * @param Category $category
+     * @param CategoryService $categoryService
+     * @return JsonResponse
      */
-    public function edit(Category $category)
+    public function destroy(Category $category, CategoryService $categoryService): JsonResponse
     {
-        //
-    }
+        if ($category->user_id === Auth::id()) {
+            if ($categoryService->delete($category)) {
+                return response()->json([
+                    'message' => 'Вы успешно удалили категорию'
+                ]);
+            }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateCategoryRequest  $request
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdateCategoryRequest $request, Category $category)
-    {
-        //
-    }
+            return response()->json([
+                'message' => 'Что-то пошло не так.. Повторите попытку позднее!'
+            ], 400);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Category  $category
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Category $category)
-    {
-        //
+        return response()->json([
+            'message' => 'Недостаточно прав для удаления'
+        ], 403);
     }
 }
