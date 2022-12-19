@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\v1;
 
 use App\Services\CategoryService;
 use Auth;
-use App\Enums\Paginate;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\v1\CategoryResource;
 use App\Models\Category;
@@ -24,9 +23,9 @@ class CategoriesController extends Controller
         return response()->json([
             'categories' => CategoryResource::collection(
                 Category::query()
-                    ->forAuth()
+                    ->byUser($request->user()->id)
                     ->orderBy('name', 'ASC')
-                    ->paginate(Paginate::Category)
+                    ->paginate(config('app.paginate.category'))
             )
         ]);
     }
@@ -58,7 +57,7 @@ class CategoriesController extends Controller
      */
     public function show(Category $category): JsonResponse
     {
-        if ($category->user_id === Auth::id()) {
+        if ($category->isAuthor(Auth::id())) {
             return response()->json([
                 'category' => new CategoryResource($category)
             ]);
@@ -77,7 +76,7 @@ class CategoriesController extends Controller
      */
     public function update(CategoryUpdateRequest $request, Category $category, CategoryService $categoryService): JsonResponse
     {
-        if ($category->user_id === Auth::id()) {
+        if ($category->isAuthor(Auth::id())) {
             if ($categoryService->update($category, $request->validated())) {
                 return response()->json([
                     'message' => 'Вы успешно обновили категорию',
@@ -102,7 +101,7 @@ class CategoriesController extends Controller
      */
     public function destroy(Category $category, CategoryService $categoryService): JsonResponse
     {
-        if ($category->user_id === Auth::id()) {
+        if ($category->isAuthor(Auth::id())) {
             if ($categoryService->delete($category)) {
                 return response()->json([
                     'message' => 'Вы успешно удалили категорию'

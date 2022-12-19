@@ -2,16 +2,15 @@
 
 namespace App\Models;
 
-use Auth;
+use App\Traits\HasUser;
 use App\Traits\HasName;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Dish extends Model
 {
-    use HasFactory, HasName;
+    use HasFactory, HasName, HasUser;
 
     protected $fillable = [
         'user_id',
@@ -26,11 +25,6 @@ class Dish extends Model
         'category',
         'quantityType'
     ];
-
-    public function scopeForAuth(Builder $builder)
-    {
-        return $builder->where('user_id', Auth::id());
-    }
 
     public function category(): BelongsTo
     {

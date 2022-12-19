@@ -7,9 +7,11 @@ use App\Models\Category;
 
 class CategoryService
 {
-    public function create(array $attrs)
+    public function create(array $attrs, int $user_id = null)
     {
-        $attrs['user_id'] = Auth::id();
+        if (!$user_id) {
+            $attrs['user_id'] = Auth::id();
+        }
 
         return Category::create($attrs);
     }

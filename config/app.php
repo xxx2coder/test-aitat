@@ -232,4 +232,9 @@ return [
 
     ],
 
+    'paginate' => [
+        'category' => 10,
+        'dish' => 10
+    ],
+
 ];

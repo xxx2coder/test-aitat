@@ -24,9 +24,9 @@ class DishesController extends Controller
         return response()->json([
             'dishes' => DishResource::collection(
                 Dish::query()
-                    ->forAuth()
+                    ->byUser($request->user()->id)
                     ->orderBy('name', 'ASC')
-                    ->paginate(Paginate::Dish)
+                    ->paginate(config('app.paginate.dish'))
             )
         ]);
     }
@@ -58,7 +58,7 @@ class DishesController extends Controller
      */
     public function show(Dish $dish): JsonResponse
     {
-        if ($dish->user_id === Auth::id()) {
+        if ($dish->isAuthor(Auth::id())) {
             return response()->json([
                 'dish' => new DishResource($dish)
             ]);
@@ -77,7 +77,7 @@ class DishesController extends Controller
      */
     public function update(DishUpdateRequest $request, Dish $dish, DishService $dishService): JsonResponse
     {
-        if ($dish->user_id === Auth::id()) {
+        if ($dish->isAuthor(Auth::id())) {
             if ($dishService->update($dish, $request->validated())) {
                 return response()->json([
                     'message' => 'Вы успешно обновили блюдо',
@@ -102,7 +102,7 @@ class DishesController extends Controller
      */
     public function destroy(Dish $dish, DishService $dishService): JsonResponse
     {
-        if ($dish->user_id === Auth::id()) {
+        if ($dish->isAuthor(Auth::id())) {
             if ($dishService->delete($dish)) {
                 return response()->json([
                     'message' => 'Вы успешно удалили блюдо'

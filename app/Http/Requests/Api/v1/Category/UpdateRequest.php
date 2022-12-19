@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\v1\Category;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRequest extends FormRequest
